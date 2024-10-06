@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 from scipy.stats import chi2_contingency
-from datetime import datetime
+import datetime
 
 # Set the style for plots
 sns.set(style="whitegrid")
