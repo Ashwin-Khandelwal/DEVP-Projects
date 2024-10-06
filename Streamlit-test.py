@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 from scipy.stats import chi2_contingency
-from datetime import datetime 
 
 # Set the style for plots
 sns.set(style="whitegrid")
@@ -78,7 +77,7 @@ def calculate_correlation(df, column, categorical_columns):
             else:
                 st.write(f"Skipping correlation calculation for '{column}' and '{other_col}' (only one category).")
 
-# Function to plot a correlation heatmap for numerical columns
+# New Function: Correlation Heatmap for Numerical Columns
 def correlation_heatmap(data):
     st.subheader("Correlation Heatmap (Numerical Columns)")
     corr = data.corr()
@@ -86,7 +85,7 @@ def correlation_heatmap(data):
     sns.heatmap(corr, annot=True, cmap="coolwarm", ax=ax)
     st.pyplot(fig)
 
-# Function to plot distribution plots for numerical columns
+# New Function: Distribution Plots for Numerical Columns
 def distribution_plots(data, numeric_columns):
     st.subheader("Distribution of Numerical Columns")
     selected_column = st.selectbox("Select a numerical column to plot", numeric_columns)
@@ -95,18 +94,20 @@ def distribution_plots(data, numeric_columns):
     ax.set_title(f"Distribution of {selected_column}")
     st.pyplot(fig)
 
-# Function for time series analysis
-def time_series_analysis(data, date_column, value_column):
-    st.subheader(f"Time Series Analysis for {value_column} over {date_column}")
-    data[date_column] = pd.to_datetime(data[date_column])
-    time_series_data = data.groupby(date_column)[value_column].sum().reset_index()
+# New Function: Time Series Analysis
+def time_series_analysis(data, date_column):
+    st.subheader("Time Series Analysis")
+    
+    # Ensure the date column is in datetime format
+    data[date_column] = pd.to_datetime(data[date_column], errors='coerce')
+    if data[date_column].isnull().all():
+        st.error(f"The selected column '{date_column}' could not be converted to datetime.")
+        return
 
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sns.lineplot(data=time_series_data, x=date_column, y=value_column, ax=ax)
-    ax.set_title(f"Time Series Analysis of {value_column}")
-    ax.set_xlabel(date_column)
-    ax.set_ylabel(value_column)
-    st.pyplot(fig)
+    time_series_data = data.set_index(date_column).resample('M').mean()  # Resample to monthly averages
+
+    st.write("Time Series Data:")
+    st.line_chart(time_series_data)
 
 # Main function to render the Streamlit app
 def main():
@@ -117,14 +118,14 @@ def main():
     if data is not None:
         categorical_columns = ['Payment_Terms', 'Country', 'Product', 'Import_Export', 'Category', 'Customs_Code', 'Shipping_Method', 'Supplier', 'Customer']
         numeric_columns = data.select_dtypes(include=[np.number]).columns.tolist()
-        
+
         # Descriptive Analysis
         st.sidebar.header("Descriptive Analysis")
         column_name = st.sidebar.selectbox("Select a categorical column to analyze", categorical_columns)
         if column_name:
             analyze_categorical_column(data, column_name)
             calculate_correlation(data, column_name, categorical_columns)
-
+        
         # New Analysis Components
         st.sidebar.header("Additional Analysis")
         
@@ -132,15 +133,11 @@ def main():
             correlation_heatmap(data)
 
         if st.sidebar.checkbox("Distribution Plots (Numerical)"):
-            distribution_plots(data, numeric_columns)
+            distribution_plots(data)
 
-        # Time Series Analysis
-        st.sidebar.header("Time Series Analysis")
-        if len(numeric_columns) > 0 and st.sidebar.checkbox("Perform Time Series Analysis"):
-            date_column = st.sidebar.selectbox("Select a Date Column", data.select_dtypes(include=['datetime64[ns]', 'object']).columns)
-            value_column = st.sidebar.selectbox("Select a Numerical Column to Analyze", numeric_columns)
-            time_series_analysis(data, date_column, value_column)
+        if st.sidebar.checkbox("Time Series Analysis"):
+            date_column = st.selectbox("Select a date column", data.select_dtypes(include=[np.object]).columns)
+            time_series_analysis(data, date_column)
 
 if __name__ == "__main__":
     main()
-
