@@ -1,7 +1,6 @@
-streamlit
-pandas
-matplotlib
-seaborn
-numpy
-scipy
-chi2_contingency
+streamlit==1.19.0  # Ensure you are using a stable version
+pandas==2.2.3
+matplotlib==3.9.2
+seaborn==0.13.2
+numpy==2.1.2
+scipy==1.14.1
