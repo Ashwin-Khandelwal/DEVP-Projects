@@ -1,0 +1,7 @@
+streamlit
+pandas
+matplotlib.pyplot
+seaborn
+numpy
+scipy.stats
+chi2_contingency
