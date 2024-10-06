@@ -1,15 +1,18 @@
+# Importing necessary libraries for Streamlit, Data Analysis, and Visualization
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 from scipy.stats import chi2_contingency
+from datetime import datetime
 
 # Set the style for plots
 sns.set(style="whitegrid")
 
 # Function to upload and load dataset
-def load_data(uploaded_file):
+def load_data():
+    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
     if uploaded_file is not None:
         data = pd.read_csv(uploaded_file)
         st.success("Data successfully loaded!")
@@ -75,7 +78,7 @@ def calculate_correlation(df, column, categorical_columns):
             else:
                 st.write(f"Skipping correlation calculation for '{column}' and '{other_col}' (only one category).")
 
-# New Function: Correlation Heatmap for Numerical Columns
+# Function to plot a correlation heatmap for numerical columns
 def correlation_heatmap(data):
     st.subheader("Correlation Heatmap (Numerical Columns)")
     corr = data.corr()
@@ -83,7 +86,7 @@ def correlation_heatmap(data):
     sns.heatmap(corr, annot=True, cmap="coolwarm", ax=ax)
     st.pyplot(fig)
 
-# New Function: Distribution Plots for Numerical Columns
+# Function to plot distribution plots for numerical columns
 def distribution_plots(data, numeric_columns):
     st.subheader("Distribution of Numerical Columns")
     selected_column = st.selectbox("Select a numerical column to plot", numeric_columns)
@@ -92,17 +95,29 @@ def distribution_plots(data, numeric_columns):
     ax.set_title(f"Distribution of {selected_column}")
     st.pyplot(fig)
 
+# Function for time series analysis
+def time_series_analysis(data, date_column, value_column):
+    st.subheader(f"Time Series Analysis for {value_column} over {date_column}")
+    data[date_column] = pd.to_datetime(data[date_column])
+    time_series_data = data.groupby(date_column)[value_column].sum().reset_index()
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.lineplot(data=time_series_data, x=date_column, y=value_column, ax=ax)
+    ax.set_title(f"Time Series Analysis of {value_column}")
+    ax.set_xlabel(date_column)
+    ax.set_ylabel(value_column)
+    st.pyplot(fig)
+
 # Main function to render the Streamlit app
 def main():
     st.title("Enhanced Data Analysis Dashboard")
-
-    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
-    data = load_data(uploaded_file)
-
+    
+    data = load_data()
+    
     if data is not None:
         categorical_columns = ['Payment_Terms', 'Country', 'Product', 'Import_Export', 'Category', 'Customs_Code', 'Shipping_Method', 'Supplier', 'Customer']
         numeric_columns = data.select_dtypes(include=[np.number]).columns.tolist()
-
+        
         # Descriptive Analysis
         st.sidebar.header("Descriptive Analysis")
         column_name = st.sidebar.selectbox("Select a categorical column to analyze", categorical_columns)
@@ -112,12 +127,20 @@ def main():
 
         # New Analysis Components
         st.sidebar.header("Additional Analysis")
-
+        
         if st.sidebar.checkbox("Correlation Heatmap (Numerical)"):
             correlation_heatmap(data)
 
         if st.sidebar.checkbox("Distribution Plots (Numerical)"):
             distribution_plots(data, numeric_columns)
 
+        # Time Series Analysis
+        st.sidebar.header("Time Series Analysis")
+        if len(numeric_columns) > 0 and st.sidebar.checkbox("Perform Time Series Analysis"):
+            date_column = st.sidebar.selectbox("Select a Date Column", data.select_dtypes(include=['datetime64[ns]', 'object']).columns)
+            value_column = st.sidebar.selectbox("Select a Numerical Column to Analyze", numeric_columns)
+            time_series_analysis(data, date_column, value_column)
+
 if __name__ == "__main__":
     main()
+
