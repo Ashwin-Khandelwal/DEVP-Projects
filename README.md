@@ -1,4 +1,5 @@
-The respository contains the project files for DEVP assignments under the supervision and guidance of Prof. Amarnath Mitra
+The respository contains the project files for DEVP assignments under the supervision and guidance of Prof. Amarnath Mitra. 
+
 The nomenclature has been simplied as much as possible but for the user's reference- here are the purposes of the files:
 1. DEVP Project_Group 26: Contains the project files for first project of DEVP
 2. DEVP Project_055008: Contains the second and final project for DEVP.
