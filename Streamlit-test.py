@@ -1,10 +1,9 @@
-# Importing necessary libraries for Streamlit, Data Analysis, and Visualization
+
+# Import necessary libraries for Streamlit, Data Analysis, and Visualization
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import numpy as np
-from scipy.stats import chi2_contingency
 
 # Set the style for plots
 sns.set(style="whitegrid")
@@ -20,124 +19,39 @@ def load_data():
         st.warning("Please upload a CSV file.")
         return None
 
-# Function to analyze and visualize categorical columns
-def analyze_categorical_column(data, column_name):
-    st.subheader(f"Analysis for {column_name}")
-    freq = data[column_name].value_counts()
-    proportion = data[column_name].value_counts(normalize=True) * 100
-
-    st.write("Value Counts:")
-    st.dataframe(freq)
-    st.write("Proportion (%):")
-    st.dataframe(proportion)
-
-    # Plotting bar chart for categorical data
-    if len(freq) > 10:
-        st.write(f"Top 10 Categories of {column_name}:")
-        top_10 = freq.head(10)
-        others = freq[10:].sum()
-        pie_labels = top_10.index.tolist() + ['Other']
-        pie_values = top_10.tolist() + [others]
-
-        # Create labels with percentages for the legend
-        pie_percentages = [(value / freq.sum()) * 100 for value in pie_values]
-        legend_labels = [f"{label}: {value:.1f}%" for label, value in zip(pie_labels, pie_percentages)]
-
-        # Plot pie chart with explode
-        explode = [0.05] * len(pie_values)  # Small separation for each slice
-        colors = sns.color_palette('Set3', len(pie_values) - 1) + ['#808080']
-
-        fig, ax = plt.subplots(figsize=(10, 6))
-        wedges, _ = ax.pie(pie_values, explode=explode, colors=colors, startangle=140)
-        ax.legend(wedges, legend_labels, title="Categories", loc="center left", bbox_to_anchor=(1, 0, 0.5, 1))
-        ax.set_title(f"Top 10 Distribution of {column_name} (Others grouped)")
-        st.pyplot(fig)
-    else:
-        st.write(f"Pie Chart of {column_name}:")
-        fig, ax = plt.subplots(figsize=(10, 6))
-        freq.plot.pie(autopct='%1.1f%%', colors=sns.color_palette('viridis', len(freq)), ax=ax)
-        ax.set_ylabel('')
-        st.pyplot(fig)
-
-# Function to calculate Cramér's V (correlation for categorical variables)
-def cramers_v(confusion_matrix):
-    chi2 = chi2_contingency(confusion_matrix)[0]
-    n = confusion_matrix.sum().sum()
-    return np.sqrt(chi2 / (n * (min(confusion_matrix.shape) - 1)))
-
-# Function to calculate and display correlation between categorical columns
-def calculate_correlation(df, column, categorical_columns):
-    st.subheader(f"Correlation Analysis for {column}")
-    for other_col in categorical_columns:
-        if other_col != column:
-            confusion_matrix = pd.crosstab(df[column], df[other_col])
-            if confusion_matrix.shape[0] > 1 and confusion_matrix.shape[1] > 1:
-                corr = cramers_v(confusion_matrix)
-                st.write(f"Cramér's V Correlation between '{column}' and '{other_col}': {corr:.4f}")
-            else:
-                st.write(f"Skipping correlation calculation for '{column}' and '{other_col}' (only one category).")
-
-# New Function: Correlation Heatmap for Numerical Columns
-def correlation_heatmap(data):
-    st.subheader("Correlation Heatmap (Numerical Columns)")
-    corr = data.corr()
-    fig, ax = plt.subplots(figsize=(10, 8))
-    sns.heatmap(corr, annot=True, cmap="coolwarm", ax=ax)
-    st.pyplot(fig)
-
-# New Function: Distribution Plots for Numerical Columns
-def distribution_plots(data, numeric_columns):
-    st.subheader("Distribution of Numerical Columns")
-    selected_column = st.selectbox("Select a numerical column to plot", numeric_columns)
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sns.histplot(data[selected_column], kde=True, ax=ax)
-    ax.set_title(f"Distribution of {selected_column}")
-    st.pyplot(fig)
-
-# New Function: Time Series Analysis
-def time_series_analysis(data, date_column):
-    st.subheader("Time Series Analysis")
+# Function to show basic data information
+def show_data_overview(data):
+    st.subheader("Data Overview")
+    st.write("Dataset Preview:")
+    st.dataframe(data.head())
     
-    # Ensure the date column is in datetime format
-    data[date_column] = pd.to_datetime(data[date_column], errors='coerce')
-    if data[date_column].isnull().all():
-        st.error(f"The selected column '{date_column}' could not be converted to datetime.")
-        return
+    st.write("Basic Statistics:")
+    st.write(data.describe())
 
-    time_series_data = data.set_index(date_column).resample('M').mean()  # Resample to monthly averages
-
-    st.write("Time Series Data:")
-    st.line_chart(time_series_data)
+# Function to analyze and visualize a selected numerical column
+def visualize_numeric_column(data):
+    numeric_columns = data.select_dtypes(include=['float64', 'int64']).columns.tolist()
+    if len(numeric_columns) > 0:
+        st.subheader("Numerical Data Visualization")
+        column_name = st.selectbox("Select a numerical column", numeric_columns)
+        
+        if column_name:
+            st.write(f"Histogram for {column_name}")
+            fig, ax = plt.subplots()
+            sns.histplot(data[column_name], kde=True, ax=ax)
+            st.pyplot(fig)
+    else:
+        st.warning("No numerical columns found for visualization.")
 
 # Main function to render the Streamlit app
 def main():
-    st.title("Enhanced Data Analysis Dashboard")
+    st.title("Basic Data Analysis Dashboard")
     
     data = load_data()
     
     if data is not None:
-        categorical_columns = ['Payment_Terms', 'Country', 'Product', 'Import_Export', 'Category', 'Customs_Code', 'Shipping_Method', 'Supplier', 'Customer']
-        numeric_columns = data.select_dtypes(include=[np.number]).columns.tolist()
-
-        # Descriptive Analysis
-        st.sidebar.header("Descriptive Analysis")
-        column_name = st.sidebar.selectbox("Select a categorical column to analyze", categorical_columns)
-        if column_name:
-            analyze_categorical_column(data, column_name)
-            calculate_correlation(data, column_name, categorical_columns)
-        
-        # New Analysis Components
-        st.sidebar.header("Additional Analysis")
-        
-        if st.sidebar.checkbox("Correlation Heatmap (Numerical)"):
-            correlation_heatmap(data)
-
-        if st.sidebar.checkbox("Distribution Plots (Numerical)"):
-            distribution_plots(data)
-
-        if st.sidebar.checkbox("Time Series Analysis"):
-            date_column = st.selectbox("Select a date column", data.select_dtypes(include=[object]).columns)
-            time_series_analysis(data, date_column)
+        show_data_overview(data)
+        visualize_numeric_column(data)
 
 if __name__ == "__main__":
     main()
