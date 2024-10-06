@@ -4,14 +4,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Set up dark mode and color theme configuration
-st.set_page_config(page_title="Data Analysis Dashboard", layout="wide")
-
 # Set the style for plots
-sns.set(style="darkgrid")  # Dark grid for dark mode aesthetics
+sns.set(style="whitegrid")
 
-# Define color palette for dark mode
-dark_palette = sns.color_palette("dark", as_cmap=True)
+# Page Config
+st.set_page_config(page_title="Data Analysis Dashboard", layout="wide")
 
 # Function to upload and load dataset
 def load_data():
@@ -32,36 +29,28 @@ def show_data_overview(data):
     st.write("Below is a preview of the dataset and some basic statistics.")
     st.dataframe(data.head(), height=200)
     
-    with st.expander("View Dataset Statistics"):
+    with st.beta_expander("View Dataset Statistics"):
         st.write(data.describe())
 
-# Function to analyze and visualize a selected numerical column with filtering
+# Function to analyze and visualize a selected numerical column
 def visualize_numeric_column(data):
     numeric_columns = data.select_dtypes(include=['float64', 'int64']).columns.tolist()
     if len(numeric_columns) > 0:
         st.markdown("### Numerical Data Visualization")
         column_name = st.selectbox("Select a numerical column", numeric_columns)
         
-        # Add filter sliders based on numerical column values
-        min_value = data[column_name].min()
-        max_value = data[column_name].max()
-        filtered_range = st.slider(f"Select the range for {column_name}", min_value, max_value, (min_value, max_value))
-        
-        filtered_data = data[(data[column_name] >= filtered_range[0]) & (data[column_name] <= filtered_range[1])]
-        
         if column_name:
             st.markdown(f"**Histogram for {column_name}**")
             fig, ax = plt.subplots(figsize=(10, 6))
-            sns.histplot(filtered_data[column_name], kde=True, ax=ax, color="skyblue")
-            ax.set_title(f'Distribution of {column_name}', fontsize=14, color='white')
-            ax.set_xlabel(column_name, color='white')
-            ax.set_ylabel('Frequency', color='white')
-            ax.tick_params(colors='white')
+            sns.histplot(data[column_name], kde=True, ax=ax, color="skyblue")
+            ax.set_title(f'Distribution of {column_name}', fontsize=14)
+            ax.set_xlabel(column_name)
+            ax.set_ylabel('Frequency')
             st.pyplot(fig)
     else:
         st.warning("No numerical columns found for visualization.")
 
-# Function to analyze and visualize a selected categorical column with filtering
+# Function to analyze and visualize a selected categorical column
 def analyze_categorical_column(data):
     categorical_columns = data.select_dtypes(include=['object']).columns.tolist()
     if len(categorical_columns) > 0:
@@ -69,19 +58,13 @@ def analyze_categorical_column(data):
         column_name = st.selectbox("Select a categorical column", categorical_columns)
         
         if column_name:
-            # Add filter options based on categorical values
-            unique_values = data[column_name].unique().tolist()
-            selected_values = st.multiselect(f"Filter {column_name}", unique_values, default=unique_values)
-            filtered_data = data[data[column_name].isin(selected_values)]
-            
             st.markdown(f"**Bar Chart for {column_name}**")
-            freq = filtered_data[column_name].value_counts()
+            freq = data[column_name].value_counts()
             fig, ax = plt.subplots(figsize=(10, 6))
-            sns.countplot(y=filtered_data[column_name], order=freq.index, ax=ax, palette="Set2")
-            ax.set_title(f'Distribution of {column_name}', fontsize=14, color='white')
-            ax.set_xlabel('Count', color='white')
-            ax.set_ylabel(column_name, color='white')
-            ax.tick_params(colors='white')
+            sns.countplot(y=data[column_name], order=freq.index, ax=ax, palette="Set2")
+            ax.set_title(f'Distribution of {column_name}', fontsize=14)
+            ax.set_xlabel('Count')
+            ax.set_ylabel(column_name)
             st.pyplot(fig)
     else:
         st.warning("No categorical columns found for visualization.")
@@ -114,6 +97,5 @@ def main():
     else:
         st.markdown("### Upload a CSV file to start exploring the data.")
 
-# Running the main function
 if __name__ == "__main__":
     main()
