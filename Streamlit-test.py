@@ -136,7 +136,7 @@ def main():
             distribution_plots(data)
 
         if st.sidebar.checkbox("Time Series Analysis"):
-            date_column = st.selectbox("Select a date column", data.select_dtypes(include=[np.object]).columns)
+            date_column = st.selectbox("Select a date column", data.select_dtypes(include=[object]).columns)
             time_series_analysis(data, date_column)
 
 if __name__ == "__main__":
