@@ -4,4 +4,3 @@ matplotlib
 seaborn
 numpy
 scipy
-chi2_contingency
