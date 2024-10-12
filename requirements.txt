@@ -4,3 +4,4 @@ matplotlib==3.9.2
 seaborn==0.13.2
 numpy==2.1.2
 scipy==1.14.1
+altair==4.2.2 
