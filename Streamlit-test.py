@@ -27,6 +27,27 @@ def show_data_overview(data):
     with st.expander("View Dataset Statistics"):
         st.write(data.describe())
 
+# Function to filter data based on user input
+def filter_data(data):
+    st.sidebar.header("Filter Data")
+    
+    # Filter by categorical variables
+    categorical_columns = data.select_dtypes(include=['object', 'category']).columns.tolist()
+    for column in categorical_columns:
+        unique_values = data[column].unique().tolist()
+        selected_values = st.sidebar.multiselect(f"Select {column}", unique_values, default=unique_values)
+        data = data[data[column].isin(selected_values)]
+    
+    # Filter by numerical variables
+    numerical_columns = data.select_dtypes(include=['float64', 'int64']).columns.tolist()
+    for column in numerical_columns:
+        min_val = float(data[column].min())
+        max_val = float(data[column].max())
+        selected_range = st.sidebar.slider(f"Select range for {column}", min_val, max_val, (min_val, max_val))
+        data = data[(data[column] >= selected_range[0]) & (data[column] <= selected_range[1])]
+    
+    return data
+
 # Function to analyze and visualize a selected numerical column
 def visualize_numeric_column(data):
     numeric_columns = data.select_dtypes(include=['float64', 'int64']).columns.tolist()
@@ -42,13 +63,9 @@ def visualize_numeric_column(data):
 
 # Function to reduce cardinality in a specific categorical column
 def reduce_cardinality_in_column(column_data, max_categories=10):
-    """
-    Groups categories beyond 'max_categories' into an 'Other' group.
-    """
     value_counts = column_data.value_counts()
     
     if len(value_counts) > max_categories:
-        # Keep only the top `max_categories` categories
         top_categories = value_counts.index[:max_categories]
         mask = ~column_data.isin(top_categories)
         column_data[mask] = 'Other'
@@ -66,12 +83,10 @@ def visualize_categorical_column(data):
         if column_name:
             column_data = data[column_name].copy()
             
-            # Sample large columns for better performance
             if len(column_data) > 5000:
                 column_data = column_data.sample(5000, random_state=1)
                 st.info("Sampled 5000 rows for faster processing.")
             
-            # Apply cardinality reduction, limiting the number of categories shown
             column_data = reduce_cardinality_in_column(column_data)
             
             st.markdown(f"**Bar Chart for {column_name}**")
@@ -87,25 +102,26 @@ def visualize_categorical_column(data):
 def main():
     st.title("Data Analysis Dashboard")
     
-    # File uploader (must be outside cached functions)
     uploaded_file = st.sidebar.file_uploader("Choose a CSV file", type="csv")
     
     if uploaded_file is not None:
-        # Load data and cache it (only after file is uploaded)
         data = load_data(uploaded_file)
         
         if data is not None:
             # Display data overview
             show_data_overview(data)
             
+            # Filter the data based on user input
+            filtered_data = filter_data(data)
+            
             # Visualization options
             st.sidebar.header("Visualization Options")
             analysis_type = st.sidebar.radio("Choose analysis type", ('Numerical', 'Categorical'))
             
             if analysis_type == 'Numerical':
-                visualize_numeric_column(data)
+                visualize_numeric_column(filtered_data)
             elif analysis_type == 'Categorical':
-                visualize_categorical_column(data)
+                visualize_categorical_column(filtered_data)
 
 if __name__ == '__main__':
     main()
