@@ -10,19 +10,13 @@ sns.set(style="whitegrid")
 # Page Config
 st.set_page_config(page_title="Data Analysis Dashboard", layout="wide")
 
-# Function to upload and load dataset
+# Function to load data from the uploaded file (cached)
 @st.cache_data
-def load_data():
-    with st.sidebar:
-        st.header("Upload Dataset")
-        uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+def load_data(uploaded_file):
     if uploaded_file is not None:
         data = pd.read_csv(uploaded_file)
-        st.success("Data successfully loaded!")
         return data
-    else:
-        st.warning("Please upload a CSV file.")
-        return None
+    return None
 
 # Function to show basic data information
 def show_data_overview(data):
@@ -88,21 +82,25 @@ def visualize_categorical_column(data):
 def main():
     st.title("Data Analysis Dashboard")
     
-    # Load data and cache it to prevent reloading on every interaction
-    data = load_data()
+    # File uploader (must be outside cached functions)
+    uploaded_file = st.sidebar.file_uploader("Choose a CSV file", type="csv")
     
-    if data is not None:
-        # Display data overview
-        show_data_overview(data)
+    if uploaded_file is not None:
+        # Load data and cache it (only after file is uploaded)
+        data = load_data(uploaded_file)
         
-        # Visualization options
-        st.sidebar.header("Visualization Options")
-        analysis_type = st.sidebar.radio("Choose analysis type", ('Numerical', 'Categorical'))
-        
-        if analysis_type == 'Numerical':
-            visualize_numeric_column(data)
-        elif analysis_type == 'Categorical':
-            visualize_categorical_column(data)
+        if data is not None:
+            # Display data overview
+            show_data_overview(data)
+            
+            # Visualization options
+            st.sidebar.header("Visualization Options")
+            analysis_type = st.sidebar.radio("Choose analysis type", ('Numerical', 'Categorical'))
+            
+            if analysis_type == 'Numerical':
+                visualize_numeric_column(data)
+            elif analysis_type == 'Categorical':
+                visualize_categorical_column(data)
 
 if __name__ == '__main__':
     main()
