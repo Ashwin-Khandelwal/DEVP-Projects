@@ -45,36 +45,36 @@ def visualize_numeric_column(data):
             plt.hist(data[column_name], bins=30, color='skyblue', edgecolor='black')
             st.pyplot(plt)
 
-# Function to reduce cardinality in categorical columns
-def reduce_cardinality(data, threshold=10):
+# Function to reduce cardinality in a specific categorical column
+def reduce_cardinality_in_column(column_data, threshold=10):
     """
-    Groups less frequent categories into 'Other' to reduce cardinality.
+    Groups less frequent categories into 'Other' if the number of unique categories exceeds the threshold.
     """
-    categorical_columns = data.select_dtypes(include=['object', 'category']).columns.tolist()
+    value_counts = column_data.value_counts()
     
-    for col in categorical_columns:
-        value_counts = data[col].value_counts()
-        # Group values that occur less than the threshold into 'Other'
-        if len(value_counts) > threshold:
-            mask = data[col].isin(value_counts.index[threshold:])
-            data.loc[mask, col] = 'Other'
+    # Only reduce cardinality if the column has more unique values than the threshold
+    if len(value_counts) > threshold:
+        mask = column_data.isin(value_counts.index[threshold:])
+        column_data[mask] = 'Other'
     
-    return data
+    return column_data
 
 # Function to analyze and visualize a selected categorical column
 def visualize_categorical_column(data):
     categorical_columns = data.select_dtypes(include=['object', 'category']).columns.tolist()
-    
-    # Apply cardinality reduction
-    data = reduce_cardinality(data)
     
     if len(categorical_columns) > 0:
         st.markdown("### Categorical Data Visualization")
         column_name = st.selectbox("Select a categorical column", categorical_columns)
         
         if column_name:
+            column_data = data[column_name].copy()
+            
+            # Apply cardinality reduction only if necessary
+            column_data = reduce_cardinality_in_column(column_data)
+            
             st.markdown(f"**Bar Chart for {column_name}**")
-            category_counts = data[column_name].value_counts().reset_index()
+            category_counts = column_data.value_counts().reset_index()
             category_counts.columns = ['Category', 'Count']
             
             plt.figure(figsize=(10, 6))
