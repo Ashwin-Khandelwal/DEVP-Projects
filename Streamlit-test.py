@@ -31,13 +31,18 @@ def show_data_overview(data):
 def filter_data(data):
     st.sidebar.header("Filter Data")
     
-    # Filter by categorical variables (excluding Transaction ID)
+    # Filter by categorical variables
     categorical_columns = data.select_dtypes(include=['object', 'category']).columns.tolist()
-    categorical_columns = [col for col in categorical_columns if 'transaction' not in col.lower()]  # Exclude transaction IDs
     
     for column in categorical_columns:
-        unique_values = data[column].unique().tolist()
-        selected_values = st.sidebar.multiselect(f"Select {column}", unique_values, default=unique_values)
+        unique_values = data[column].value_counts()
+        # Limit to top 5 or 6 categories based on frequency
+        if len(unique_values) > 6:
+            top_values = unique_values.head(6).index.tolist()
+        else:
+            top_values = unique_values.index.tolist()
+        
+        selected_values = st.sidebar.multiselect(f"Select {column}", top_values, default=top_values)
         data = data[data[column].isin(selected_values)]
     
     # Filter by numerical variables
