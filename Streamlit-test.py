@@ -45,9 +45,29 @@ def visualize_numeric_column(data):
             plt.hist(data[column_name], bins=30, color='skyblue', edgecolor='black')
             st.pyplot(plt)
 
+# Function to reduce cardinality in categorical columns
+def reduce_cardinality(data, threshold=10):
+    """
+    Groups less frequent categories into 'Other' to reduce cardinality.
+    """
+    categorical_columns = data.select_dtypes(include=['object', 'category']).columns.tolist()
+    
+    for col in categorical_columns:
+        value_counts = data[col].value_counts()
+        # Group values that occur less than the threshold into 'Other'
+        if len(value_counts) > threshold:
+            mask = data[col].isin(value_counts.index[threshold:])
+            data.loc[mask, col] = 'Other'
+    
+    return data
+
 # Function to analyze and visualize a selected categorical column
 def visualize_categorical_column(data):
     categorical_columns = data.select_dtypes(include=['object', 'category']).columns.tolist()
+    
+    # Apply cardinality reduction
+    data = reduce_cardinality(data)
+    
     if len(categorical_columns) > 0:
         st.markdown("### Categorical Data Visualization")
         column_name = st.selectbox("Select a categorical column", categorical_columns)
