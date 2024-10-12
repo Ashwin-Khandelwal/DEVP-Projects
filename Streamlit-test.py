@@ -11,6 +11,7 @@ sns.set(style="whitegrid")
 st.set_page_config(page_title="Data Analysis Dashboard", layout="wide")
 
 # Function to upload and load dataset
+@st.cache_data
 def load_data():
     with st.sidebar:
         st.header("Upload Dataset")
@@ -47,9 +48,6 @@ def visualize_numeric_column(data):
 
 # Function to reduce cardinality in a specific categorical column
 def reduce_cardinality_in_column(column_data, threshold=10):
-    """
-    Groups less frequent categories into 'Other' if the number of unique categories exceeds the threshold.
-    """
     value_counts = column_data.value_counts()
     
     # Only reduce cardinality if the column has more unique values than the threshold
@@ -59,7 +57,7 @@ def reduce_cardinality_in_column(column_data, threshold=10):
     
     return column_data
 
-# Function to analyze and visualize a selected categorical column
+# Function to analyze and visualize a selected categorical column with sampling
 def visualize_categorical_column(data):
     categorical_columns = data.select_dtypes(include=['object', 'category']).columns.tolist()
     
@@ -69,6 +67,11 @@ def visualize_categorical_column(data):
         
         if column_name:
             column_data = data[column_name].copy()
+            
+            # Sample large columns for better performance
+            if len(column_data) > 5000:
+                column_data = column_data.sample(5000, random_state=1)
+                st.info("Sampled 5000 rows for faster processing.")
             
             # Apply cardinality reduction only if necessary
             column_data = reduce_cardinality_in_column(column_data)
@@ -85,6 +88,7 @@ def visualize_categorical_column(data):
 def main():
     st.title("Data Analysis Dashboard")
     
+    # Load data and cache it to prevent reloading on every interaction
     data = load_data()
     
     if data is not None:
