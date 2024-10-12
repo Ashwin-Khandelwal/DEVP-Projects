@@ -41,17 +41,21 @@ def visualize_numeric_column(data):
             st.pyplot(plt)
 
 # Function to reduce cardinality in a specific categorical column
-def reduce_cardinality_in_column(column_data, threshold=10):
+def reduce_cardinality_in_column(column_data, max_categories=10):
+    """
+    Groups categories beyond 'max_categories' into an 'Other' group.
+    """
     value_counts = column_data.value_counts()
     
-    # Only reduce cardinality if the column has more unique values than the threshold
-    if len(value_counts) > threshold:
-        mask = column_data.isin(value_counts.index[threshold:])
+    if len(value_counts) > max_categories:
+        # Keep only the top `max_categories` categories
+        top_categories = value_counts.index[:max_categories]
+        mask = ~column_data.isin(top_categories)
         column_data[mask] = 'Other'
     
     return column_data
 
-# Function to analyze and visualize a selected categorical column with sampling
+# Function to analyze and visualize a selected categorical column with sampling and limiting categories
 def visualize_categorical_column(data):
     categorical_columns = data.select_dtypes(include=['object', 'category']).columns.tolist()
     
@@ -67,7 +71,7 @@ def visualize_categorical_column(data):
                 column_data = column_data.sample(5000, random_state=1)
                 st.info("Sampled 5000 rows for faster processing.")
             
-            # Apply cardinality reduction only if necessary
+            # Apply cardinality reduction, limiting the number of categories shown
             column_data = reduce_cardinality_in_column(column_data)
             
             st.markdown(f"**Bar Chart for {column_name}**")
@@ -76,6 +80,7 @@ def visualize_categorical_column(data):
             
             plt.figure(figsize=(10, 6))
             sns.barplot(x='Category', y='Count', data=category_counts)
+            plt.xticks(rotation=45, ha='right')  # Rotate x-axis labels for better readability
             st.pyplot(plt)
 
 # Main App Function
