@@ -33,7 +33,7 @@ def show_numerical_stats(data):
 # Function to show frequency counts for categorical variables
 def show_categorical_stats(data):
     st.markdown("### Descriptive Statistics for Categorical Variables")
-    categorical_data = data.select_dtypes(include(['object', 'category']))
+    categorical_data = data.select_dtypes(include=['object', 'category'])  # Corrected line
     
     if not categorical_data.empty:
         for column in categorical_data.columns:
