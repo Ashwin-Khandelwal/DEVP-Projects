@@ -49,6 +49,8 @@ def filter_by_date(data, date_column):
     st.sidebar.subheader("Date Range Filter")
     min_date = data[date_column].min()
     max_date = data[date_column].max()
+    
+    # Use the actual min/max dates in the data as default values for the date picker
     date_range = st.sidebar.date_input("Select date range", [min_date, max_date], min_value=min_date, max_value=max_date)
     
     if len(date_range) == 2:
@@ -72,7 +74,7 @@ def visualize_time_series(data, date_column):
         st.markdown(f"**Line Chart for {y_column} over {date_column}**")
         plt.figure(figsize=(10, 6))
         plt.plot(filtered_data[date_column], filtered_data[y_column], color='blue')
-        plt.xlabel(f"{date_column}")
+        plt.xlabel(f"{date_column}")  # Set the date column explicitly as the X-axis
         plt.ylabel(f"{y_column}")
         plt.title(f"{y_column} over Time")
         plt.xticks(rotation=45)
