@@ -32,13 +32,17 @@ def show_data_overview(data):
     with st.expander("View Dataset Statistics"):
         st.write(data.describe())
 
-# Function to parse the date column
-def parse_date_column(data, date_column):
-    try:
-        data[date_column] = pd.to_datetime(data[date_column])
-    except (ValueError, TypeError):
-        st.error(f"Failed to parse {date_column} as a date.")
-    return data
+# Function to parse the date column automatically
+def parse_date_column(data):
+    date_column = None
+    for column in data.columns:
+        try:
+            data[column] = pd.to_datetime(data[column])
+            date_column = column
+            break
+        except (ValueError, TypeError):
+            continue
+    return data, date_column
 
 # Function to filter data by date range
 def filter_by_date(data, date_column):
@@ -87,15 +91,14 @@ def main():
             # Display data overview
             show_data_overview(data)
             
-            # Select the date column for time series analysis
-            date_column = st.sidebar.selectbox("Select the date column", data.select_dtypes(include=['object']).columns.tolist())
+            # Automatically detect and parse the date column
+            data, date_column = parse_date_column(data)
             
             if date_column:
-                # Parse the date column
-                data = parse_date_column(data, date_column)
-                
-                # Visualize time series
+                # Visualize time series with the detected date column
                 visualize_time_series(data, date_column)
+            else:
+                st.warning("No valid date column found in the dataset.")
 
 if __name__ == '__main__':
     main()
