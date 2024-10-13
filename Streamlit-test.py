@@ -1,96 +1,116 @@
-# Import necessary libraries for Streamlit, Data Analysis, and Visualization
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import numpy as np
 
-# Set the style for plots
+# Set plot styles
 sns.set(style="whitegrid")
 
 # Page Config
-st.set_page_config(page_title="Data Analysis Dashboard", layout="wide")
+st.set_page_config(page_title="Data Visualization and Descriptive Statistics", layout="wide")
 
-# Function to load data from the uploaded file (cached)
+# Function to load data from the uploaded file (cached for performance)
 @st.cache_data
 def load_data(uploaded_file):
     if uploaded_file is not None:
         data = pd.read_csv(uploaded_file)
-        # If the dataset is too large, sample a subset to prevent memory issues
         if len(data) > 10000:
-            data = data.sample(10000, random_state=1)
+            data = data.sample(10000, random_state=1)  # Sample large datasets for performance
             st.warning("The dataset has been sampled to 10,000 rows for better performance.")
         return data
     return None
 
-# Function to show basic data information
-def show_data_overview(data):
-    st.markdown("### Data Overview")
-    st.write("Below is a preview of the dataset and some basic statistics.")
-    st.dataframe(data.head(), height=200)
+# Function to show descriptive statistics for numerical variables
+def show_numerical_stats(data):
+    st.markdown("### Descriptive Statistics for Numerical Variables")
+    numerical_data = data.select_dtypes(include=['float64', 'int64'])
     
-    with st.expander("View Dataset Statistics"):
-        st.write(data.describe())
+    if not numerical_data.empty:
+        st.write(numerical_data.describe())
+    else:
+        st.warning("No numerical columns found.")
 
-# Function to parse the date column automatically
-def parse_date_column(data):
-    date_column = None
-    for column in data.columns:
-        try:
-            # Attempt to parse the column as datetime
-            data[column] = pd.to_datetime(data[column], errors='coerce')
-            if pd.api.types.is_datetime64_any_dtype(data[column]):
-                date_column = column
-                break
-        except (ValueError, TypeError):
-            continue
-    return data, date_column
-
-# Function to visualize time series data
-def visualize_time_series(data, date_column):
-    st.markdown("### Time Series Analysis")
+# Function to show frequency counts for categorical variables
+def show_categorical_stats(data):
+    st.markdown("### Descriptive Statistics for Categorical Variables")
+    categorical_data = data.select_dtypes(include=['object', 'category'])
     
-    # Select a numerical column for the y-axis
-    numeric_columns = data.select_dtypes(include=['float64', 'int64']).columns.tolist()
-    y_column = st.selectbox("Select a numerical column to plot over time", numeric_columns)
-    
-    if y_column and date_column:
-        # Ensure that the data is sorted by the date column
-        data = data.sort_values(by=date_column)
-        
-        st.markdown(f"**Line Chart for {y_column} over {date_column}**")
-        
-        plt.figure(figsize=(10, 6))
-        plt.plot(data[date_column], data[y_column], color='blue')
-        plt.xlabel(f"{date_column}")
-        plt.ylabel(f"{y_column}")
-        plt.title(f"{y_column} over Time")
-        plt.xticks(rotation=45)
-        st.pyplot(plt)
+    if not categorical_data.empty:
+        for column in categorical_data.columns:
+            st.markdown(f"**{column}**")
+            st.write(categorical_data[column].value_counts())
+    else:
+        st.warning("No categorical columns found.")
 
-# Main App Function
+# Function to visualize numerical variables (histogram)
+def visualize_numerical(data):
+    st.markdown("### Numerical Variable Visualization")
+    numerical_columns = data.select_dtypes(include=['float64', 'int64']).columns.tolist()
+
+    if numerical_columns:
+        selected_column = st.selectbox("Select a numerical column", numerical_columns)
+        if selected_column:
+            plt.figure(figsize=(10, 6))
+            sns.histplot(data[selected_column], kde=True)
+            plt.title(f"Distribution of {selected_column}")
+            plt.xlabel(selected_column)
+            plt.ylabel("Frequency")
+            st.pyplot(plt)
+    else:
+        st.warning("No numerical columns available for visualization.")
+
+# Function to visualize categorical variables (bar chart)
+def visualize_categorical(data):
+    st.markdown("### Categorical Variable Visualization")
+    categorical_columns = data.select_dtypes(include=['object', 'category']).columns.tolist()
+
+    if categorical_columns:
+        selected_column = st.selectbox("Select a categorical column", categorical_columns)
+        if selected_column:
+            plt.figure(figsize=(10, 6))
+            sns.countplot(y=data[selected_column], palette="viridis")
+            plt.title(f"Count of Categories in {selected_column}")
+            plt.ylabel(selected_column)
+            plt.xlabel("Count")
+            st.pyplot(plt)
+    else:
+        st.warning("No categorical columns available for visualization.")
+
+# Main app function
 def main():
-    st.title("Data Analysis Dashboard")
-    
+    st.title("Data Visualization and Descriptive Statistics Dashboard")
+
+    # Upload the CSV file
     uploaded_file = st.sidebar.file_uploader("Choose a CSV file", type="csv")
-    
+
     if uploaded_file is not None:
+        # Load the data
         data = load_data(uploaded_file)
-        
+
         if data is not None:
-            # Display data overview
-            show_data_overview(data)
-            
-            # Automatically detect and parse the date column
-            data, date_column = parse_date_column(data)
-            
-            if date_column:
-                # Visualize time series with the detected date column
-                visualize_time_series(data, date_column)
+            # Show the first few rows of the data
+            st.markdown("### Dataset Preview")
+            st.dataframe(data.head(), height=200)
+
+            # Show descriptive statistics for numerical variables
+            show_numerical_stats(data)
+
+            # Show frequency counts for categorical variables
+            show_categorical_stats(data)
+
+            # Allow the user to visualize either numerical or categorical variables
+            st.markdown("## Visualizations")
+            visualization_type = st.selectbox("Choose the type of visualization", ["Numerical", "Categorical"])
+
+            if visualization_type == "Numerical":
+                visualize_numerical(data)
             else:
-                st.warning("No valid date column found in the dataset.")
+                visualize_categorical(data)
         else:
-            st.error("Unable to load the data.")
-    
+            st.error("Unable to load data. Please check the file format.")
+    else:
+        st.info("Please upload a CSV file to get started.")
+
+# Run the app
 if __name__ == '__main__':
     main()
