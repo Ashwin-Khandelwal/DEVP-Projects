@@ -16,6 +16,10 @@ st.set_page_config(page_title="Data Analysis Dashboard", layout="wide")
 def load_data(uploaded_file):
     if uploaded_file is not None:
         data = pd.read_csv(uploaded_file)
+        # If the dataset is too large, sample a subset to prevent memory issues
+        if len(data) > 10000:
+            data = data.sample(10000, random_state=1)
+            st.warning("The dataset has been sampled to 10,000 rows for better performance.")
         return data
     return None
 
