@@ -32,17 +32,13 @@ def show_data_overview(data):
     with st.expander("View Dataset Statistics"):
         st.write(data.describe())
 
-# Function to identify and parse date columns
-def parse_date_columns(data):
-    date_columns = []
-    for column in data.columns:
-        try:
-            data[column] = pd.to_datetime(data[column])
-            date_columns.append(column)
-        except (ValueError, TypeError):
-            # Ignore non-date columns
-            pass
-    return data, date_columns
+# Function to parse the date column
+def parse_date_column(data, date_column):
+    try:
+        data[date_column] = pd.to_datetime(data[date_column])
+    except (ValueError, TypeError):
+        st.error(f"Failed to parse {date_column} as a date.")
+    return data
 
 # Function to filter data by date range
 def filter_by_date(data, date_column):
@@ -58,27 +54,25 @@ def filter_by_date(data, date_column):
     return data
 
 # Function to visualize time series data
-def visualize_time_series(data, date_columns):
-    if len(date_columns) > 0:
-        st.markdown("### Time Series Analysis")
-        date_column = st.selectbox("Select a date column", date_columns)
-        
-        # Filter by date range
-        filtered_data = filter_by_date(data, date_column)
-        
-        # Select a numerical column for the y-axis
-        numeric_columns = data.select_dtypes(include=['float64', 'int64']).columns.tolist()
-        y_column = st.selectbox("Select a numerical column to plot over time", numeric_columns)
-        
-        if y_column:
-            st.markdown(f"**Line Chart for {y_column} over {date_column}**")
-            plt.figure(figsize=(10, 6))
-            plt.plot(filtered_data[date_column], filtered_data[y_column], color='blue')
-            plt.xlabel(f"{date_column}")
-            plt.ylabel(f"{y_column}")
-            plt.title(f"{y_column} over Time")
-            plt.xticks(rotation=45)
-            st.pyplot(plt)
+def visualize_time_series(data, date_column):
+    st.markdown("### Time Series Analysis")
+    
+    # Filter by date range
+    filtered_data = filter_by_date(data, date_column)
+    
+    # Select a numerical column for the y-axis
+    numeric_columns = data.select_dtypes(include=['float64', 'int64']).columns.tolist()
+    y_column = st.selectbox("Select a numerical column to plot over time", numeric_columns)
+    
+    if y_column:
+        st.markdown(f"**Line Chart for {y_column} over {date_column}**")
+        plt.figure(figsize=(10, 6))
+        plt.plot(filtered_data[date_column], filtered_data[y_column], color='blue')
+        plt.xlabel(f"{date_column}")
+        plt.ylabel(f"{y_column}")
+        plt.title(f"{y_column} over Time")
+        plt.xticks(rotation=45)
+        st.pyplot(plt)
 
 # Main App Function
 def main():
@@ -93,12 +87,15 @@ def main():
             # Display data overview
             show_data_overview(data)
             
-            # Parse date columns
-            data, date_columns = parse_date_columns(data)
+            # Select the date column for time series analysis
+            date_column = st.sidebar.selectbox("Select the date column", data.select_dtypes(include=['object']).columns.tolist())
             
-            # If date columns are found, enable time series analysis
-            if date_columns:
-                visualize_time_series(data, date_columns)
+            if date_column:
+                # Parse the date column
+                data = parse_date_column(data, date_column)
+                
+                # Visualize time series
+                visualize_time_series(data, date_column)
 
 if __name__ == '__main__':
     main()
