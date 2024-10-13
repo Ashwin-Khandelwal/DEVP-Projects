@@ -36,11 +36,13 @@ def filter_data(data):
     
     for column in categorical_columns:
         unique_values = data[column].value_counts()
-        # Limit to top 5 or 6 categories based on frequency
-        if len(unique_values) > 6:
-            top_values = unique_values.head(6).index.tolist()
+        
+        # Retain all unique values if less than or equal to 6 unique values
+        if len(unique_values) <= 6:
+            top_values = unique_values.index.tolist()  # Show all values
         else:
-            top_values = unique_values.index.tolist()
+            # Limit to top 5 or 6 categories by frequency
+            top_values = unique_values.head(6).index.tolist()
         
         selected_values = st.sidebar.multiselect(f"Select {column}", top_values, default=top_values)
         data = data[data[column].isin(selected_values)]
@@ -57,7 +59,7 @@ def filter_data(data):
 
 # Function to analyze and visualize a selected numerical column
 def visualize_numeric_column(data):
-    numeric_columns = data.select_dtypes(include=['float64', 'int64']).columns.tolist()
+    numeric_columns = data.select_dtypes(include(['float64', 'int64'])).columns.tolist()
     if len(numeric_columns) > 0:
         st.markdown("### Numerical Data Visualization")
         column_name = st.selectbox("Select a numerical column", numeric_columns)
@@ -81,7 +83,7 @@ def reduce_cardinality_in_column(column_data, max_categories=10):
 
 # Function to analyze and visualize a selected categorical column with sampling and limiting categories
 def visualize_categorical_column(data):
-    categorical_columns = data.select_dtypes(include=['object', 'category']).columns.tolist()
+    categorical_columns = data.select_dtypes(include(['object', 'category'])).columns.tolist()
     
     if len(categorical_columns) > 0:
         st.markdown("### Categorical Data Visualization")
