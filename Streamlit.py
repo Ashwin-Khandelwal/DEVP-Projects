@@ -1,101 +1,122 @@
-# Import necessary libraries for Streamlit, Data Analysis, and Visualization
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Set the style for plots
+# Set plot styles
 sns.set(style="whitegrid")
 
 # Page Config
-st.set_page_config(page_title="Data Analysis Dashboard", layout="wide")
+st.set_page_config(page_title="Data Visualization and Descriptive Statistics", layout="wide")
 
-# Function to upload and load dataset
-def load_data():
-    with st.sidebar:
-        st.header("Upload Dataset")
-        uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+# Function to load data from the uploaded file (cached for performance)
+@st.cache_data
+def load_data(uploaded_file):
     if uploaded_file is not None:
         data = pd.read_csv(uploaded_file)
-        st.success("Data successfully loaded!")
+        if len(data) > 10000:
+            data = data.sample(10000, random_state=1)  # Sample large datasets for performance
+            st.warning("The dataset has been sampled to 10,000 rows for better performance.")
         return data
-    else:
-        st.warning("Please upload a CSV file.")
-        return None
+    return None
 
-# Function to show basic data information
-def show_data_overview(data):
-    st.markdown("### Data Overview")
-    st.write("Below is a preview of the dataset and some basic statistics.")
-    st.dataframe(data.head(), height=200)
+# Function to show descriptive statistics for numerical variables
+def show_numerical_stats(data):
+    st.markdown("### Descriptive Statistics for Numerical Variables")
+    numerical_data = data.select_dtypes(include=['float64', 'int64'])
     
-    with st.beta_expander("View Dataset Statistics"):
-        st.write(data.describe())
-
-# Function to analyze and visualize a selected numerical column
-def visualize_numeric_column(data):
-    numeric_columns = data.select_dtypes(include=['float64', 'int64']).columns.tolist()
-    if len(numeric_columns) > 0:
-        st.markdown("### Numerical Data Visualization")
-        column_name = st.selectbox("Select a numerical column", numeric_columns)
-        
-        if column_name:
-            st.markdown(f"**Histogram for {column_name}**")
-            fig, ax = plt.subplots(figsize=(10, 6))
-            sns.histplot(data[column_name], kde=True, ax=ax, color="skyblue")
-            ax.set_title(f'Distribution of {column_name}', fontsize=14)
-            ax.set_xlabel(column_name)
-            ax.set_ylabel('Frequency')
-            st.pyplot(fig)
+    if not numerical_data.empty:
+        st.write(numerical_data.describe())
     else:
-        st.warning("No numerical columns found for visualization.")
+        st.warning("No numerical columns found.")
 
-# Function to analyze and visualize a selected categorical column
-def analyze_categorical_column(data):
-    categorical_columns = data.select_dtypes(include=['object']).columns.tolist()
-    if len(categorical_columns) > 0:
-        st.markdown("### Categorical Data Visualization")
-        column_name = st.selectbox("Select a categorical column", categorical_columns)
-        
-        if column_name:
-            st.markdown(f"**Bar Chart for {column_name}**")
-            freq = data[column_name].value_counts()
-            fig, ax = plt.subplots(figsize=(10, 6))
-            sns.countplot(y=data[column_name], order=freq.index, ax=ax, palette="Set2")
-            ax.set_title(f'Distribution of {column_name}', fontsize=14)
-            ax.set_xlabel('Count')
-            ax.set_ylabel(column_name)
-            st.pyplot(fig)
+# Function to show frequency counts for categorical variables
+def show_categorical_stats(data):
+    st.markdown("### Descriptive Statistics for Categorical Variables")
+    categorical_data = data.select_dtypes(include=['object', 'category'])  # Corrected line
+    
+    if not categorical_data.empty:
+        for column in categorical_data.columns:
+            st.markdown(f"**{column}**")
+            st.write(categorical_data[column].value_counts())
     else:
-        st.warning("No categorical columns found for visualization.")
+        st.warning("No categorical columns found.")
 
-# Main function to render the Streamlit app
+# Function to visualize numerical variables (histogram)
+def visualize_numerical(data):
+    st.markdown("### Numerical Variable Visualization")
+    numerical_columns = data.select_dtypes(include=['float64', 'int64']).columns.tolist()
+
+    if numerical_columns:
+        selected_column = st.selectbox("Select a numerical column", numerical_columns, key="num_visual")
+        if selected_column:
+            plt.figure(figsize=(10, 6))
+            sns.histplot(data[selected_column], kde=True)
+            plt.title(f"Distribution of {selected_column}")
+            plt.xlabel(selected_column)
+            plt.ylabel("Frequency")
+            st.pyplot(plt)
+    else:
+        st.warning("No numerical columns available for visualization.")
+
+# Function to visualize categorical variables (bar chart)
+def visualize_categorical(data):
+    st.markdown("### Categorical Variable Visualization")
+    categorical_columns = data.select_dtypes(include=['object', 'category']).columns.tolist()
+
+    if categorical_columns:
+        selected_column = st.selectbox("Select a categorical column", categorical_columns, key="cat_visual")
+        if selected_column:
+            plt.figure(figsize=(10, 6))
+            sns.countplot(y=data[selected_column], palette="viridis")
+            plt.title(f"Count of Categories in {selected_column}")
+            plt.ylabel(selected_column)
+            plt.xlabel("Count")
+            st.pyplot(plt)
+    else:
+        st.warning("No categorical columns available for visualization.")
+
+# Main app function
 def main():
-    # Sidebar navigation
-    st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", ["Overview", "Visualizations"])
+    st.title("Data Visualization and Descriptive Statistics Dashboard")
 
-    # Load the data through file uploader
-    data = load_data()
+    # Upload the CSV file
+    uploaded_file = st.sidebar.file_uploader("Choose a CSV file", type="csv")
 
-    if data is not None:
-        if page == "Overview":
-            st.title("📊 Data Overview")
-            show_data_overview(data)
-        elif page == "Visualizations":
-            st.title("📈 Data Visualizations")
-            st.sidebar.header("Visualization Options")
-            st.sidebar.markdown("Select columns to visualize.")
-            
-            # Allow user to toggle between numeric and categorical visualizations
-            visualize_type = st.sidebar.radio("Choose data type", ["Numerical", "Categorical"])
-            
-            if visualize_type == "Numerical":
-                visualize_numeric_column(data)
-            elif visualize_type == "Categorical":
-                analyze_categorical_column(data)
+    if uploaded_file is not None:
+        # Load the data
+        data = load_data(uploaded_file)
+
+        if data is not None:
+            # Sidebar options for analysis
+            st.sidebar.markdown("## Choose Analysis")
+            analysis_option = st.sidebar.radio("Select analysis type:", 
+                                                ("Overview", "Descriptive Statistics", "Visualizations"))
+
+            # Show the dataset overview
+            if analysis_option == "Overview":
+                st.markdown("### Dataset Preview")
+                st.dataframe(data.head(), height=200)
+
+            # Show descriptive statistics for both numerical and categorical data
+            elif analysis_option == "Descriptive Statistics":
+                show_numerical_stats(data)
+                show_categorical_stats(data)
+
+            # Allow the user to visualize either numerical or categorical variables
+            elif analysis_option == "Visualizations":
+                visualization_type = st.sidebar.selectbox("Choose the type of visualization", 
+                                                          ["Numerical", "Categorical"])
+
+                if visualization_type == "Numerical":
+                    visualize_numerical(data)
+                else:
+                    visualize_categorical(data)
+        else:
+            st.error("Unable to load data. Please check the file format.")
     else:
-        st.markdown("### Upload a CSV file to start exploring the data.")
+        st.info("Please upload a CSV file to get started.")
 
-if __name__ == "__main__":
+# Run the app
+if __name__ == '__main__':
     main()
