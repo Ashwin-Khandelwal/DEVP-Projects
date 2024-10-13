@@ -33,7 +33,7 @@ def show_numerical_stats(data):
 # Function to show frequency counts for categorical variables
 def show_categorical_stats(data):
     st.markdown("### Descriptive Statistics for Categorical Variables")
-    categorical_data = data.select_dtypes(include=['object', 'category'])
+    categorical_data = data.select_dtypes(include(['object', 'category']))
     
     if not categorical_data.empty:
         for column in categorical_data.columns:
@@ -48,7 +48,7 @@ def visualize_numerical(data):
     numerical_columns = data.select_dtypes(include=['float64', 'int64']).columns.tolist()
 
     if numerical_columns:
-        selected_column = st.selectbox("Select a numerical column", numerical_columns)
+        selected_column = st.selectbox("Select a numerical column", numerical_columns, key="num_visual")
         if selected_column:
             plt.figure(figsize=(10, 6))
             sns.histplot(data[selected_column], kde=True)
@@ -65,7 +65,7 @@ def visualize_categorical(data):
     categorical_columns = data.select_dtypes(include=['object', 'category']).columns.tolist()
 
     if categorical_columns:
-        selected_column = st.selectbox("Select a categorical column", categorical_columns)
+        selected_column = st.selectbox("Select a categorical column", categorical_columns, key="cat_visual")
         if selected_column:
             plt.figure(figsize=(10, 6))
             sns.countplot(y=data[selected_column], palette="viridis")
@@ -88,24 +88,30 @@ def main():
         data = load_data(uploaded_file)
 
         if data is not None:
-            # Show the first few rows of the data
-            st.markdown("### Dataset Preview")
-            st.dataframe(data.head(), height=200)
+            # Sidebar options for analysis
+            st.sidebar.markdown("## Choose Analysis")
+            analysis_option = st.sidebar.radio("Select analysis type:", 
+                                                ("Overview", "Descriptive Statistics", "Visualizations"))
 
-            # Show descriptive statistics for numerical variables
-            show_numerical_stats(data)
+            # Show the dataset overview
+            if analysis_option == "Overview":
+                st.markdown("### Dataset Preview")
+                st.dataframe(data.head(), height=200)
 
-            # Show frequency counts for categorical variables
-            show_categorical_stats(data)
+            # Show descriptive statistics for both numerical and categorical data
+            elif analysis_option == "Descriptive Statistics":
+                show_numerical_stats(data)
+                show_categorical_stats(data)
 
             # Allow the user to visualize either numerical or categorical variables
-            st.markdown("## Visualizations")
-            visualization_type = st.selectbox("Choose the type of visualization", ["Numerical", "Categorical"])
+            elif analysis_option == "Visualizations":
+                visualization_type = st.sidebar.selectbox("Choose the type of visualization", 
+                                                          ["Numerical", "Categorical"])
 
-            if visualization_type == "Numerical":
-                visualize_numerical(data)
-            else:
-                visualize_categorical(data)
+                if visualization_type == "Numerical":
+                    visualize_numerical(data)
+                else:
+                    visualize_categorical(data)
         else:
             st.error("Unable to load data. Please check the file format.")
     else:
