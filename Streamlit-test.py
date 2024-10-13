@@ -3,6 +3,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 # Set the style for plots
 sns.set(style="whitegrid")
@@ -44,8 +45,12 @@ def filter_data(data):
             # Limit to top 5 or 6 categories by frequency
             top_values = unique_values.head(6).index.tolist()
         
-        selected_values = st.sidebar.multiselect(f"Select {column}", top_values, default=top_values)
-        data = data[data[column].isin(selected_values)]
+        # Initialize with all values selected, but don't enable the filter by default
+        selected_values = st.sidebar.multiselect(f"Select {column} (optional)", top_values, default=None)
+        
+        # Only apply filter if some values are selected
+        if selected_values:
+            data = data[data[column].isin(selected_values)]
     
     # Filter by numerical variables
     numerical_columns = data.select_dtypes(include=['float64', 'int64']).columns.tolist()
@@ -55,8 +60,11 @@ def filter_data(data):
         # Limit range to avoid excessive slider lengths
         capped_min = max(min_val, -1e6)
         capped_max = min(max_val, 1e6)
-        selected_range = st.sidebar.slider(f"Select range for {column}", capped_min, capped_max, (capped_min, capped_max))
-        data = data[(data[column] >= selected_range[0]) & (data[column] <= selected_range[1])]
+        selected_range = st.sidebar.slider(f"Select range for {column} (optional)", capped_min, capped_max, (capped_min, capped_max))
+        
+        # Only apply filter if a valid range is selected
+        if not np.isnan(selected_range[0]) and not np.isnan(selected_range[1]):
+            data = data[(data[column] >= selected_range[0]) & (data[column] <= selected_range[1])]
     
     return data
 
