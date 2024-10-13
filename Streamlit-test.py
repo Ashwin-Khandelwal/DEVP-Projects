@@ -52,14 +52,17 @@ def filter_data(data):
     for column in numerical_columns:
         min_val = float(data[column].min())
         max_val = float(data[column].max())
-        selected_range = st.sidebar.slider(f"Select range for {column}", min_val, max_val, (min_val, max_val))
+        # Limit range to avoid excessive slider lengths
+        capped_min = max(min_val, -1e6)
+        capped_max = min(max_val, 1e6)
+        selected_range = st.sidebar.slider(f"Select range for {column}", capped_min, capped_max, (capped_min, capped_max))
         data = data[(data[column] >= selected_range[0]) & (data[column] <= selected_range[1])]
     
     return data
 
 # Function to analyze and visualize a selected numerical column
 def visualize_numeric_column(data):
-    numeric_columns = data.select_dtypes(include(['float64', 'int64'])).columns.tolist()
+    numeric_columns = data.select_dtypes(include=['float64', 'int64']).columns.tolist()
     if len(numeric_columns) > 0:
         st.markdown("### Numerical Data Visualization")
         column_name = st.selectbox("Select a numerical column", numeric_columns)
@@ -83,7 +86,7 @@ def reduce_cardinality_in_column(column_data, max_categories=10):
 
 # Function to analyze and visualize a selected categorical column with sampling and limiting categories
 def visualize_categorical_column(data):
-    categorical_columns = data.select_dtypes(include(['object', 'category'])).columns.tolist()
+    categorical_columns = data.select_dtypes(include=['object', 'category']).columns.tolist()
     
     if len(categorical_columns) > 0:
         st.markdown("### Categorical Data Visualization")
