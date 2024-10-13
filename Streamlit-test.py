@@ -37,14 +37,16 @@ def parse_date_column(data):
     date_column = None
     for column in data.columns:
         try:
-            data[column] = pd.to_datetime(data[column])
-            date_column = column
-            break
+            # Attempt to parse the column as datetime
+            data[column] = pd.to_datetime(data[column], errors='coerce')
+            if pd.api.types.is_datetime64_any_dtype(data[column]):
+                date_column = column
+                break
         except (ValueError, TypeError):
             continue
     return data, date_column
 
-# Function to visualize time series data (no date range filter)
+# Function to visualize time series data
 def visualize_time_series(data, date_column):
     st.markdown("### Time Series Analysis")
     
@@ -52,11 +54,15 @@ def visualize_time_series(data, date_column):
     numeric_columns = data.select_dtypes(include=['float64', 'int64']).columns.tolist()
     y_column = st.selectbox("Select a numerical column to plot over time", numeric_columns)
     
-    if y_column:
+    if y_column and date_column:
+        # Ensure that the data is sorted by the date column
+        data = data.sort_values(by=date_column)
+        
         st.markdown(f"**Line Chart for {y_column} over {date_column}**")
+        
         plt.figure(figsize=(10, 6))
         plt.plot(data[date_column], data[y_column], color='blue')
-        plt.xlabel(f"{date_column}")  # Explicitly set the date column as the X-axis
+        plt.xlabel(f"{date_column}")
         plt.ylabel(f"{y_column}")
         plt.title(f"{y_column} over Time")
         plt.xticks(rotation=45)
@@ -83,6 +89,8 @@ def main():
                 visualize_time_series(data, date_column)
             else:
                 st.warning("No valid date column found in the dataset.")
-
+        else:
+            st.error("Unable to load the data.")
+    
 if __name__ == '__main__':
     main()
