@@ -6,4 +6,4 @@ The nomenclature has been simplied as much as possible but for the user's refere
 3. Streamlit.py: Contains the files for the streamlit dashboard. The author requests the user to fork this repository and run this file locally on their system.
 4. Requirements.txt: Contains the library requirements for the streamlit dashboard to work
 
-Thank you for going through my and ChatGPT's/Gemini's work. Live long and prosper! 
+Thank you for going through my project work. Live long and prosper! 
